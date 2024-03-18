@@ -3,10 +3,6 @@ import UIKit
 import NuveiSimplyConnectSDK
 
 public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
-  private var merchantId: String = ""
-  private var merchantSiteId: String = ""
-  private var currency: String = ""
-
   public static func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "nuvei_payment_wrapper", binaryMessenger: registrar.messenger())
     let instance = NuveiPaymentWrapperPlugin()
@@ -14,17 +10,16 @@ public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    // result("iOS " + UIDevice.current.systemVersion)
+    let viewController: UIViewController = (UIApplication.shared.delegate?.window??.rootViewController)!;
 
     // Method Channel       
     switch call.method {
-      case "initializer":
+      case "setup":
         guard let args = call.arguments as? [String : Any] else {return}
-         self.initializer(result: result, args: args)
+        self.setup(result: result, args: args)
         break
       case "authenticate3d":
         guard let args = call.arguments as? [String : Any] else {return}
-        let viewController: UIViewController = (UIApplication.shared.delegate?.window??.rootViewController)!;
         self.authenticate3d(result: result, args: args, controller: viewController)
         break
       default:
@@ -32,31 +27,28 @@ public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
         break
     }
   }
-
-   /* Init SDK before use it */
-     private func initializer(result: FlutterResult, args: [String : Any]) {
-       // Set environment
+    
+    /* Set environment */
+     private func setup(result: FlutterResult, args: [String : Any]) {
        let environment = args["environment"] as! String
        switch environment {
-           case Environment.stating:
+            case PackageEnvironment.stating:
                NuveiSimplyConnect.setup(environment: NuveiSimplyConnect.Environment.integration)
                break
-       default:
+            default:
                NuveiSimplyConnect.setup(environment: NuveiSimplyConnect.Environment.production)
                break
        }
-      
-       // Set some key values
-       self.merchantId = args["merchantId"] as! String
-       self.merchantSiteId = args["merchantSiteId"] as! String
-       self.currency = args["currency"] as! String
-
-       result(true)
+         
+        result(true)
      }
     
      /* Authenticate 3D */
      private func authenticate3d(result: @escaping FlutterResult, args: [String : Any], controller: UIViewController) {
        let sessionToken = args["sessionToken"] as! String
+       let merchantId = args["merchantId"] as! String
+       let merchantSiteId = args["merchantSiteId"] as! String
+       let currency = args["currency"] as! String
        let amount = args["amount"] as! String
        let cardHolderName = args["cardHolderName"] as! String
        let cardNumber = args["cardNumber"] as! String
@@ -75,9 +67,9 @@ public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
        )
        let input = NVInput(
          sessionToken: sessionToken,
-         merchantId: self.merchantId,
-         merchantSiteId: self.merchantSiteId,
-         currency: self.currency,
+         merchantId: merchantId,
+         merchantSiteId: merchantSiteId,
+         currency: currency,
          amount: amount,
          paymentOption: paymentOption
        );
@@ -101,7 +93,7 @@ public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
          result(authenticate3dResponseToJson)
        }        
      }
-    
+           
     // utils function
     private func convertToJson<T: Encodable>(data: T) -> String {
       let encoder = JSONEncoder()
@@ -114,7 +106,7 @@ public class NuveiPaymentWrapperPlugin: NSObject, FlutterPlugin {
     }  
 }
 
-enum Environment {
+enum PackageEnvironment {
   static let stating = "STAGING"
   static let production = "PRODUCTION"
 }

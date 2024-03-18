@@ -24,12 +24,8 @@ abstract class NuveiPaymentWrapperPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  Future<String?> getPlatformVersion() {
-    throw UnimplementedError('platformVersion() has not been implemented.');
-  }
-
-  Future<bool> initializer(Map<String, dynamic> args) {
-    throw UnimplementedError('initializer() has not been implemented.');
+  Future<bool?> setup(String environment) {
+    throw UnimplementedError('setup() has not been implemented.');
   }
 
   Future<String?> authenticate3d(Map<String, dynamic> args) {

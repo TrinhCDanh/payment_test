@@ -10,16 +10,9 @@ class MethodChannelNuveiPaymentWrapper extends NuveiPaymentWrapperPlatform {
   final methodChannel = const MethodChannel('nuvei_payment_wrapper');
 
   @override
-  Future<String?> getPlatformVersion() async {
-    final version =
-        await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
-  }
-
-  @override
-  Future<bool> initializer(Map<String, dynamic> args) async {
-    await methodChannel.invokeMethod<bool>('initializer', args);
-    return true;
+  Future<bool?> setup(String environment) async {
+    return await methodChannel
+        .invokeMethod<bool>('setup', {"environment": environment});
   }
 
   @override

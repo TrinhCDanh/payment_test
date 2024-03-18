@@ -26,9 +26,6 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
   private lateinit var channel : MethodChannel
   private lateinit var context: Context
   private lateinit var activity: Activity
-  private var merchantId: String = ""
-  private var merchantSiteId: String = ""
-  private var currency: String = ""
   private val gson = Gson()
 
   override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -43,8 +40,8 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
-      "initializer" -> {
-        initializer(result, call)
+      "setup" -> {
+        setup(result, call)
       }
       "authenticate3d" -> {
         authenticate3d(result, call)
@@ -55,46 +52,36 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
     }
   }
 
-  private fun initializer(result: MethodChannel.Result, call: MethodCall) {
+  private fun setup(result: MethodChannel.Result, call: MethodCall) {
     // Set environment
     val environment: String = call.argument("environment")!!
     when (environment) {
-      "STAGING" -> {
+      PackageEnvironment.stating -> {
         NuveiSimplyConnect.setup(
           environment = NuveiSimplyConnect.Environment.STAGING,
-        );
-      }
-      "PRODUCTION" -> {
-        NuveiSimplyConnect.setup(
-          environment = NuveiSimplyConnect.Environment.PROD,
         );
       }
       else -> {
         NuveiSimplyConnect.setup(
-          environment = NuveiSimplyConnect.Environment.STAGING,
+          environment = NuveiSimplyConnect.Environment.PROD,
         );
       }
     }
-
-    // Set some key values
-    merchantId = call.argument("merchantId")!!
-    merchantSiteId = call.argument("merchantSiteId")!!
-    currency = call.argument("currency")!!
 
     result.success(true)
   }
 
   private fun authenticate3d(result: MethodChannel.Result, call: MethodCall) {
-    val sessionToken: String? = call.argument("sessionToken")
-    val amount: String? = call.argument("amount")
-    val cardHolderName: String? = call.argument("cardHolderName")
-    val cardNumber: String? = call.argument("cardNumber")
-    val cvv: String? = call.argument("cvv")
-    val monthExpiry: String? = call.argument("monthExpiry")
-    val yearExpiry: String? = call.argument("yearExpiry")
-
-    if (sessionToken == null || amount == null || monthExpiry == null
-      || yearExpiry == null) return;
+    val sessionToken: String = call.argument("sessionToken")!!
+    val merchantId: String = call.argument("merchantId")!!
+    val merchantSiteId: String = call.argument("merchantSiteId")!!
+    val currency: String = call.argument("currency")!!
+    val amount: String = call.argument("amount")!!
+    val cardHolderName: String = call.argument("cardHolderName")!!
+    val cardNumber: String = call.argument("cardNumber")!!
+    val cvv: String = call.argument("cvv")!!
+    val monthExpiry: String = call.argument("monthExpiry")!!
+    val yearExpiry: String = call.argument("yearExpiry")!!
 
     val paymentOption = PaymentOption(
       card = CardDetails(
@@ -120,7 +107,7 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
       input = input,
       callback = object : Callback<NVAuthenticate3dOutput> {
         override fun onComplete(response: NVAuthenticate3dOutput) {
-          writeToLog(gson.toJson(response))
+           writeToLog(gson.toJson(response))
           val authenticate3dResponse = Authenticate3dResponse(
             cavv = response.cavv,
             eci =  response.eci,
@@ -128,10 +115,10 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
             ccTempToken =  response.ccTempToken,
             transactionId = response.transactionId,
             result = response.result.uppercase(),
-            transactionStatus = "",
+            transactionStatus = response.rawResult?.get("transactionStatus") as String?,
             errorDescription = response.errorDescription,
             errCode = response.errorCode,
-            status = ""
+            status = response.rawResult?.get("status") as String?
           )
           val authenticate3dResponseToJson = gson.toJson(authenticate3dResponse)
           result.success(authenticate3dResponseToJson)
@@ -158,6 +145,13 @@ class NuveiPaymentWrapperPlugin: FlutterPlugin, MethodCallHandler, ActivityAware
 
   override fun onDetachedFromActivity() {
     TODO("Not yet implemented")
+  }
+}
+
+class PackageEnvironment {
+  companion object {
+    const val stating = "STAGING"
+    const val production = "PRODUCTION"
   }
 }
 
